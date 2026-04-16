@@ -1,14 +1,22 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Clock, Camera, LogOut, Settings as SettingsIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { LayoutDashboard, Users, Clock, Camera, LogOut, Settings as SettingsIcon, ShieldEllipsis } from 'lucide-react';
 import './App.css';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import AttendanceLogs from './pages/AttendanceLogs';
 import Scanner from './pages/Scanner';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+import SuperAdmin from './pages/SuperAdmin';
 
-const Sidebar = () => {
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) return <Navigate to="/login" />;
+  return children;
+};
+
+const Sidebar = ({ onLogout, companyName }) => {
   const location = useLocation();
   const menuItems = [
     { title: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
@@ -18,11 +26,17 @@ const Sidebar = () => {
     { title: 'Settings', path: '/settings', icon: <SettingsIcon size={20} /> },
   ];
 
+  // Don't show sidebar on login and super admin pages (unless we want to link out)
+  if (['/login', '/super-admin'].includes(location.pathname)) return null;
+
   return (
     <div className="sidebar">
       <div className="sidebar-logo">
         <div className="logo-icon">QR</div>
-        <span>AMS Admin</span>
+        <div>
+            <span>{companyName || 'AMS Admin'}</span>
+            <p className="small text-primary" style={{ fontSize: '0.7rem', margin: 0 }}>Company Dashboard</p>
+        </div>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
@@ -37,7 +51,11 @@ const Sidebar = () => {
         ))}
       </nav>
       <div className="sidebar-footer">
-        <button className="nav-item logout">
+        <Link to="/super-admin" className="nav-item">
+            <ShieldEllipsis size={20} />
+            <span>Server Admin</span>
+        </Link>
+        <button className="nav-item logout" onClick={onLogout}>
           <LogOut size={20} />
           <span>Logout</span>
         </button>
@@ -47,21 +65,52 @@ const Sidebar = () => {
 };
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [company, setCompany] = useState(JSON.parse(localStorage.getItem('company') || 'null'));
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedCompany = JSON.parse(localStorage.getItem('company') || 'null');
+    setIsLoggedIn(!!token);
+    setCompany(storedCompany);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('company');
+    setIsLoggedIn(false);
+    setCompany(null);
+    window.location.href = '/login';
+  };
+
   return (
     <Router>
-      <div className="app-container">
-        <Sidebar />
-        <main className="content">
+      <AppContent onLogout={handleLogout} company={company} />
+    </Router>
+  );
+}
+
+// Separate component to use useLocation()
+const AppContent = ({ onLogout, company }) => {
+  const location = useLocation();
+  const isAuthPage = ['/login', '/super-admin'].includes(location.pathname);
+
+  return (
+    <div className="app-container">
+        <Sidebar onLogout={onLogout} companyName={company?.name} />
+        <main className={`content ${isAuthPage ? 'full-width' : ''}`}>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/attendance" element={<AttendanceLogs />} />
-            <Route path="/scanner" element={<Scanner />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/super-admin" element={<SuperAdmin />} />
+            
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
+            <Route path="/attendance" element={<ProtectedRoute><AttendanceLogs /></ProtectedRoute>} />
+            <Route path="/scanner" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>
-    </Router>
   );
 }
 

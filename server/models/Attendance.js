@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const AttendanceSchema = new mongoose.Schema({
+    companyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Company',
+        required: true
+    },
     employeeId: {
         type: String,
         required: true,
@@ -36,7 +41,7 @@ const AttendanceSchema = new mongoose.Schema({
     }
 });
 
-// Compound index to ensure uniqueness per employee per day
-AttendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
+// Compound index to ensure uniqueness per employee per day PER COMPANY
+AttendanceSchema.index({ employeeId: 1, date: 1, companyId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Attendance', AttendanceSchema);

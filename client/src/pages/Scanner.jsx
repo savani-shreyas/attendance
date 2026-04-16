@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import axios from 'axios';
+import api from '../api';
 import { Camera, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 
 const Scanner = () => {
@@ -34,7 +34,7 @@ const Scanner = () => {
         }
 
         try {
-            const res = await axios.post('http://localhost:5000/api/attendance/scan', {
+            const res = await api.post('/attendance/scan', {
                 employeeId: decodedText
             });
             setScanResult({
@@ -91,13 +91,7 @@ const Scanner = () => {
             </div>
 
             <div className="time-info margin-top text-center">
-                <p className="text-muted">Today's Valid Time Slots:</p>
-                <div className="slots-grid">
-                    <span className="slot-item">Morning: 8-11 AM</span>
-                    <span className="slot-item">Break In: 12-1 PM</span>
-                    <span className="slot-item">Break Out: 2-3 PM</span>
-                    <span className="slot-item">Evening: 5-8 PM</span>
-                </div>
+                <p className="text-muted">Flexible Attendance enabled. All scans will be recorded in sequence.</p>
             </div>
 
             <style>{`
@@ -113,7 +107,7 @@ const Scanner = () => {
                     color: white; 
                     border: none; 
                     border-radius: 8px; 
-                    margin-top: 10px;
+                    margin: 10px 0 15px;
                     cursor: pointer;
                 }
                 

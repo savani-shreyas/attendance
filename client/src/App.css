@@ -79,6 +79,11 @@
   max-width: 1400px;
 }
 
+.content.full-width {
+  margin-left: 0;
+  max-width: 100%;
+}
+
 .logout {
     width: 100%;
     background: transparent;

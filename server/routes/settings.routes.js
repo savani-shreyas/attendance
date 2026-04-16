@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Settings = require('../models/Settings');
+const auth = require('../middleware/auth');
 
-// Get settings
-router.get('/', async (req, res) => {
+// Get settings (Company-specific)
+router.get('/', auth, async (req, res) => {
     try {
-        let settings = await Settings.findOne({ id: 'global' });
+        let settings = await Settings.findOne({ companyId: req.companyId });
         if (!settings) {
-            settings = new Settings({ id: 'global' });
+            settings = new Settings({ companyId: req.companyId });
             await settings.save();
         }
         res.json(settings);
@@ -16,11 +17,11 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Update settings
-router.post('/', async (req, res) => {
+// Update settings (Company-specific)
+router.post('/', auth, async (req, res) => {
     try {
         let settings = await Settings.findOneAndUpdate(
-            { id: 'global' },
+            { companyId: req.companyId },
             { $set: req.body },
             { new: true, upsert: true }
         );

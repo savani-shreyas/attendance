@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { UserPlus, QrCode, Trash2, Download, X } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 
@@ -12,7 +12,7 @@ const Employees = () => {
 
     const fetchEmployees = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/employees');
+            const res = await api.get('/employees');
             setEmployees(res.data);
         } catch (err) {
             console.error("Error fetching employees", err);
@@ -27,7 +27,7 @@ const Employees = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/employees', formData);
+            await api.post('/employees', formData);
             setFormData({ name: '', employeeId: '' });
             setIsModalOpen(false);
             fetchEmployees();
@@ -41,7 +41,7 @@ const Employees = () => {
     const handleDelete = async (id) => {
         if (!confirm("Are you sure you want to delete this employee?")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/employees/${id}`);
+            await api.delete(`/employees/${id}`);
             fetchEmployees();
         } catch (err) {
             console.error("Error deleting", err);

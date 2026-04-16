@@ -3,28 +3,29 @@ const router = express.Router();
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 const Settings = require('../models/Settings');
+const auth = require('../middleware/auth');
 
-// POST /api/attendance/scan
-router.post('/scan', async (req, res) => {
+// POST /api/attendance/scan (Now company-specific)
+router.post('/scan', auth, async (req, res) => {
     const { employeeId } = req.body;
     
     try {
-        const employee = await Employee.findOne({ employeeId });
+        // Find employee within THIS company
+        const employee = await Employee.findOne({ employeeId, companyId: req.companyId });
         if (!employee) {
-            return res.status(404).json({ message: 'Employee not found' });
+            return res.status(404).json({ message: 'Employee not found in your company' });
         }
 
-        const settings = await Settings.findOne({ id: 'global' }) || new Settings({ id: 'global' });
         const now = new Date();
-        const hour = now.getHours();
         const dateStr = now.toISOString().split('T')[0];
         const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
         const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
 
-        // Find or create today's attendance record
-        let attendance = await Attendance.findOne({ employeeId, date: dateStr });
+        // Find or create today's attendance record for THIS company
+        let attendance = await Attendance.findOne({ employeeId, date: dateStr, companyId: req.companyId });
         if (!attendance) {
             attendance = new Attendance({
+                companyId: req.companyId,
                 employeeId,
                 employeeName: employee.name,
                 date: dateStr,
@@ -33,30 +34,14 @@ router.post('/scan', async (req, res) => {
         }
 
         let slot = null;
-
-        if (settings.testMode) {
-            // In test mode, pick the first available slot
-            if (attendance.morningIn === "--") slot = 'morningIn';
-            else if (attendance.breakIn === "--") slot = 'breakIn';
-            else if (attendance.breakOut === "--") slot = 'breakOut';
-            else if (attendance.eveningOut === "--") slot = 'eveningOut';
-            
-            if (!slot) return res.status(400).json({ message: 'All scans for today are already recorded.' });
-        } else {
-            // Normal mode: check against dynamic ranges
-            if (hour >= settings.morningStart && hour < settings.morningEnd) slot = 'morningIn';
-            else if (hour >= settings.breakInStart && hour < settings.breakInEnd) slot = 'breakIn';
-            else if (hour >= settings.breakOutStart && hour < settings.breakOutEnd) slot = 'breakOut';
-            else if (hour >= settings.eveningStart && hour < settings.eveningEnd) slot = 'eveningOut';
-
-            if (!slot) {
-                return res.status(400).json({ message: 'Scanned outside valid time windows.' });
-            }
-
-            // Check if already scanned in this window
-            if (attendance[slot] !== "--") {
-                return res.status(400).json({ message: `Already recorded ${slot.replace(/([A-Z])/g, ' $1').toLowerCase()} for today.` });
-            }
+        // Always pick the first available slot (Flexible Mode)
+        if (attendance.morningIn === "--") slot = 'morningIn';
+        else if (attendance.breakIn === "--") slot = 'breakIn';
+        else if (attendance.breakOut === "--") slot = 'breakOut';
+        else if (attendance.eveningOut === "--") slot = 'eveningOut';
+        
+        if (!slot) {
+            return res.status(400).json({ message: 'All scans for today are already recorded.' });
         }
 
         // Record the time
@@ -65,7 +50,7 @@ router.post('/scan', async (req, res) => {
 
         res.json({ 
             success: true, 
-            message: `Recorded ${slot.replace(/([A-Z])/g, ' $1').toLowerCase()} at ${timeStr} ${settings.testMode ? '(Test Mode)' : ''}`,
+            message: `Recorded ${slot.replace(/([A-Z])/g, ' $1').toLowerCase()} at ${timeStr}`,
             attendance 
         });
 
@@ -74,10 +59,10 @@ router.post('/scan', async (req, res) => {
     }
 });
 
-// GET /api/attendance - Fetch logs with filters
-router.get('/', async (req, res) => {
+// GET /api/attendance - Fetch logs with filters (Company-isolated)
+router.get('/', auth, async (req, res) => {
     const { date, employeeId } = req.query;
-    let query = {};
+    let query = { companyId: req.companyId };
     if (date) query.date = date;
     if (employeeId) query.employeeId = employeeId;
 

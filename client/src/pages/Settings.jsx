@@ -4,20 +4,15 @@ import { Save, Settings as SettingsIcon, AlertTriangle, RefreshCw, ToggleLeft, T
 
 const Settings = () => {
     const [settings, setSettings] = useState({
-        morningStart: 8, morningEnd: 11,
-        breakInStart: 12, breakInEnd: 13,
-        breakOutStart: 14, breakOutEnd: 15,
-        eveningStart: 17, eveningEnd: 20,
-        testMode: false
+        systemName: "Attendance QR"
     });
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState(null);
 
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/settings');
+                const res = await api.get('/settings');
                 setSettings(res.data);
             } catch (err) {
                 console.error("Error fetching settings", err);
@@ -28,18 +23,6 @@ const Settings = () => {
         fetchSettings();
     }, []);
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            await axios.post('http://localhost:5000/api/settings', settings);
-            setMessage({ type: 'success', text: 'Settings updated successfully!' });
-            setTimeout(() => setMessage(null), 3000);
-        } catch (err) {
-            setMessage({ type: 'error', text: 'Failed to update settings.' });
-        } finally {
-            setSaving(false);
-        }
-    };
 
     if (loading) return <div className="animate-in">Loading settings...</div>;
 
@@ -48,11 +31,8 @@ const Settings = () => {
             <header className="page-header flex-between">
                 <div>
                     <h1>System Settings</h1>
-                    <p className="text-muted">Configure attendance time windows and system behavior.</p>
+                    <p className="text-muted" style={{ margin: '15px 0' }}>Current system configuration and status.</p>
                 </div>
-                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                    <Save size={20} /> {saving ? 'Saving...' : 'Save Changes'}
-                </button>
             </header>
 
             {message && (
@@ -65,76 +45,43 @@ const Settings = () => {
                 <div className="glass-card settings-card">
                     <div className="card-header">
                         <SettingsIcon size={20} />
-                        <h3>Time Slots (24h Format)</h3>
+                        <h3>System Configuration</h3>
                     </div>
                     <div className="card-body">
-                        <div className="slot-config">
-                            <label>Morning Clock-In</label>
-                            <div className="range-inputs">
-                                <input type="number" value={settings.morningStart} onChange={(e) => setSettings({...settings, morningStart: parseInt(e.target.value)})} min="0" max="23"/>
-                                <span>to</span>
-                                <input type="number" value={settings.morningEnd} onChange={(e) => setSettings({...settings, morningEnd: parseInt(e.target.value)})} min="0" max="23"/>
-                            </div>
+                        <div className="status-info">
+                            <div className="status-badge success">Active</div>
+                            <strong>Flexible Attendance Mode</strong>
+                            <p className="text-muted" style={{ marginTop: '0.5rem' }}>
+                                The system is currently configured to automatically record attendance in the next available slot for each employee, regardless of the time of day.
+                            </p>
                         </div>
-                        <div className="slot-config">
-                            <label>Break-In (Lunch Start)</label>
-                            <div className="range-inputs">
-                                <input type="number" value={settings.breakInStart} onChange={(e) => setSettings({...settings, breakInStart: parseInt(e.target.value)})} min="0" max="23"/>
-                                <span>to</span>
-                                <input type="number" value={settings.breakInEnd} onChange={(e) => setSettings({...settings, breakInEnd: parseInt(e.target.value)})} min="0" max="23"/>
+                        <div className="info-list" style={{ marginTop: '1.5rem' }}>
+                            <div className="info-item">
+                                <span className="dot"></span>
+                                <span>No fixed time windows required</span>
                             </div>
-                        </div>
-                        <div className="slot-config">
-                            <label>Break-Out (Lunch End)</label>
-                            <div className="range-inputs">
-                                <input type="number" value={settings.breakOutStart} onChange={(e) => setSettings({...settings, breakOutStart: parseInt(e.target.value)})} min="0" max="23"/>
-                                <span>to</span>
-                                <input type="number" value={settings.breakOutEnd} onChange={(e) => setSettings({...settings, breakOutEnd: parseInt(e.target.value)})} min="0" max="23"/>
+                            <div className="info-item">
+                                <span className="dot"></span>
+                                <span>Up to 4 scans recorded daily</span>
                             </div>
-                        </div>
-                        <div className="slot-config">
-                            <label>Evening Clock-Out</label>
-                            <div className="range-inputs">
-                                <input type="number" value={settings.eveningStart} onChange={(e) => setSettings({...settings, eveningStart: parseInt(e.target.value)})} min="0" max="23"/>
-                                <span>to</span>
-                                <input type="number" value={settings.eveningEnd} onChange={(e) => setSettings({...settings, eveningEnd: parseInt(e.target.value)})} min="0" max="23"/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="glass-card settings-card mode-card">
-                    <div className="card-header">
-                        <AlertTriangle size={20} color="var(--secondary)" />
-                        <h3>Development Mode</h3>
-                    </div>
-                    <div className="card-body">
-                        <div className="toggle-group">
-                            <div className="toggle-info">
-                                <strong>Enable Test Mode</strong>
-                                <p className="text-muted">Allows scanning QR codes at any time of day for testing purposes. It will automatically fill the next available slot.</p>
-                            </div>
-                            <button className={`toggle-btn ${settings.testMode ? 'active' : ''}`} onClick={() => setSettings({...settings, testMode: !settings.testMode})}>
-                                {settings.testMode ? <ToggleRight size={32} color="var(--success)" /> : <ToggleLeft size={32} />}
-                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <style>{`
-                .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
+                .settings-grid { display: grid; grid-template-columns: 1fr; }
                 .settings-card { padding: 0; overflow: hidden; }
                 .card-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.02); }
                 .card-body { padding: 1.5rem; }
                 
-                .slot-config { margin-bottom: 1.5rem; }
-                .slot-config label { display: block; margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--text-muted); }
-                .range-inputs { display: flex; align-items: center; gap: 1rem; }
-                .range-inputs input { width: 80px; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white; text-align: center; }
+                .status-info { background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.1); }
+                .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin: 0 1rem 1rem 0; }
+                .status-badge.success { background: var(--success); color: black; }
                 
-                .toggle-group { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
-                .toggle-btn { background: none; border: none; cursor: pointer; }
+                .info-list { display: flex; flex-direction: column; gap: 1rem; }
+                .info-item { display: flex; align-items: center; gap: 0.75rem; color: var(--text-muted); font-size: 0.95rem; }
+                .dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; }
                 
                 .alert { padding: 1rem; border-radius: 12px; margin-top: 1rem; }
                 .alert-success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
