@@ -35,7 +35,7 @@ const Sidebar = ({ onLogout, companyName }) => {
         <div className="logo-icon">QR</div>
         <div>
             <span>{companyName || 'AMS Admin'}</span>
-            <p className="small text-primary" style={{ fontSize: '0.7rem', margin: 0 }}>Company Dashboard</p>
+            <p className="small text-primary" style={{ fontSize: '0.7rem', marginTop: '10px' }}>Company Dashboard</p>
         </div>
       </div>
       <nav className="sidebar-nav">
