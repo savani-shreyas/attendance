@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { Save, Settings as SettingsIcon, AlertTriangle, RefreshCw, ToggleLeft, ToggleRight } from 'lucide-react';
 
 const Settings = () => {

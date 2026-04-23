@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import AttendanceLogs from './pages/AttendanceLogs';
 import Scanner from './pages/Scanner';
+import EmployeeScan from './pages/EmployeeScan';
+import ScannerLogin from './pages/ScannerLogin';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import SuperAdmin from './pages/SuperAdmin';
@@ -22,12 +24,11 @@ const Sidebar = ({ onLogout, companyName }) => {
     { title: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
     { title: 'Employees', path: '/employees', icon: <Users size={20} /> },
     { title: 'Attendance', path: '/attendance', icon: <Clock size={20} /> },
-    { title: 'Scan QR', path: '/scanner', icon: <Camera size={20} /> },
     { title: 'Settings', path: '/settings', icon: <SettingsIcon size={20} /> },
   ];
 
-  // Don't show sidebar on login and super admin pages (unless we want to link out)
-  if (['/login', '/super-admin'].includes(location.pathname)) return null;
+  // Don't show sidebar on login, scanner-login, scan, and super admin pages
+  if (['/login', '/super-admin', '/scanner-login', '/scan'].includes(location.pathname)) return null;
 
   return (
     <div className="sidebar">
@@ -53,7 +54,7 @@ const Sidebar = ({ onLogout, companyName }) => {
       <div className="sidebar-footer">
         <Link to="/super-admin" className="nav-item">
             <ShieldEllipsis size={20} />
-            <span>Server Admin</span>
+            <span>Super Admin</span>
         </Link>
         <button className="nav-item logout" onClick={onLogout}>
           <LogOut size={20} />
@@ -93,7 +94,7 @@ function App() {
 // Separate component to use useLocation()
 const AppContent = ({ onLogout, company }) => {
   const location = useLocation();
-  const isAuthPage = ['/login', '/super-admin'].includes(location.pathname);
+  const isAuthPage = ['/login', '/super-admin', '/scanner-login', '/scan'].includes(location.pathname);
 
   return (
     <div className="app-container">
@@ -102,11 +103,12 @@ const AppContent = ({ onLogout, company }) => {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/super-admin" element={<SuperAdmin />} />
+            <Route path="/scanner-login" element={<ScannerLogin />} />
+            <Route path="/scan" element={<EmployeeScan />} />
             
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
             <Route path="/attendance" element={<ProtectedRoute><AttendanceLogs /></ProtectedRoute>} />
-            <Route path="/scanner" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           </Routes>
         </main>

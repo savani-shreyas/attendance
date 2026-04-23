@@ -5,6 +5,8 @@ const Employee = require('../models/Employee');
 const Settings = require('../models/Settings');
 const auth = require('../middleware/auth');
 
+const Company = require('../models/Company');
+
 // POST /api/attendance/scan (Now company-specific)
 router.post('/scan', auth, async (req, res) => {
     const { employeeId } = req.body;
@@ -51,6 +53,64 @@ router.post('/scan', auth, async (req, res) => {
         res.json({ 
             success: true, 
             message: `Recorded ${slot.replace(/([A-Z])/g, ' $1').toLowerCase()} at ${timeStr}`,
+            attendance 
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /api/attendance/public-scan (Publicly accessible for employee's devices)
+router.post('/public-scan', async (req, res) => {
+    const { employeeId, companyCode } = req.body;
+    
+    try {
+        // 1. Find the company by code
+        const company = await Company.findOne({ companyCode });
+        if (!company) {
+            return res.status(404).json({ message: 'Invalid Company QR Code.' });
+        }
+
+        // 2. Find employee within that company
+        const employee = await Employee.findOne({ employeeId, companyId: company._id });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee ID not found in this company.' });
+        }
+
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+        const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+
+        // 3. Find or create today's attendance record
+        let attendance = await Attendance.findOne({ employeeId, date: dateStr, companyId: company._id });
+        if (!attendance) {
+            attendance = new Attendance({
+                companyId: company._id,
+                employeeId,
+                employeeName: employee.name,
+                date: dateStr,
+                day: dayName
+            });
+        }
+
+        let slot = null;
+        if (attendance.morningIn === "--") slot = 'morningIn';
+        else if (attendance.breakIn === "--") slot = 'breakIn';
+        else if (attendance.breakOut === "--") slot = 'breakOut';
+        else if (attendance.eveningOut === "--") slot = 'eveningOut';
+        
+        if (!slot) {
+            return res.status(400).json({ message: 'All scans for today are already recorded.' });
+        }
+
+        attendance[slot] = timeStr;
+        await attendance.save();
+
+        res.json({ 
+            success: true, 
+            message: `Success! Recorded ${slot.replace(/([A-Z])/g, ' $1').toLowerCase()} at ${timeStr}`,
             attendance 
         });
 

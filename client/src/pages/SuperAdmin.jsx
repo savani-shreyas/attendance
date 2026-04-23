@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, Plus, Building, Key, Trash2, CheckCircle2, Lock, Edit2, X, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { ShieldAlert, Plus, Building, Key, Trash2, CheckCircle2, Lock, Edit2, X, RefreshCw, Eye, EyeOff, QrCode, Download } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import api from '../api';
 
 const SuperAdmin = () => {
@@ -8,6 +9,7 @@ const SuperAdmin = () => {
     const [activeTab, setActiveTab] = useState('create');
     const [companies, setCompanies] = useState([]);
     const [showPasswords, setShowPasswords] = useState(false);
+    const [visiblePasswords, setVisiblePasswords] = useState({});
     
     // Create Form State
     const [companyName, setCompanyName] = useState('');
@@ -19,6 +21,7 @@ const SuperAdmin = () => {
 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [selectedQR, setSelectedQR] = useState(null);
 
     const generateRandomPassword = () => {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluded similar looking chars like I, O, 0, 1
@@ -103,6 +106,17 @@ const SuperAdmin = () => {
         } catch (err) {
             alert(err.response?.data?.message || "Failed to delete company");
         }
+    };
+
+    const downloadQR = (code, name) => {
+        const canvas = document.getElementById(`qr-${code}`);
+        const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        let downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = `QR_${name}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
     };
 
     if (!isAuthorized) {
@@ -256,15 +270,30 @@ const SuperAdmin = () => {
                                                 <td><strong>{comp.companyName}</strong></td>
                                                 <td><span className="code-badge">{comp.companyCode}</span></td>
                                                 <td>
-                                                    <span className={`password-badge ${!comp.displayPassword ? 'missing' : ''}`}>
-                                                        {showPasswords 
-                                                            ? (comp.displayPassword || 'Edit to set')
-                                                            : '••••'
-                                                        }
-                                                    </span>
+                                                    <div className="password-display">
+                                                        <span className={`password-badge ${!comp.displayPassword ? 'missing' : ''}`}>
+                                                            {(showPasswords || visiblePasswords[comp._id]) 
+                                                                ? (comp.displayPassword || 'Edit to set')
+                                                                : '••••'
+                                                            }
+                                                        </span>
+                                                        <button 
+                                                            className="eye-btn"
+                                                            onClick={() => setVisiblePasswords(prev => ({...prev, [comp._id]: !prev[comp._id]}))}
+                                                        >
+                                                            {(showPasswords || visiblePasswords[comp._id]) ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                        </button>
+                                                    </div>
                                                 </td>
                                                 <td>{new Date(comp.createdAt).toLocaleDateString()}</td>
                                                 <td className="actions-cell">
+                                                    <button 
+                                                        className="action-btn"
+                                                        onClick={() => setSelectedQR(comp)}
+                                                        title="View Company QR"
+                                                    >
+                                                        <QrCode size={16} /> QR
+                                                    </button>
                                                     <button 
                                                         className="action-btn"
                                                         onClick={() => openEditModal(comp)}
@@ -342,6 +371,40 @@ const SuperAdmin = () => {
                 </div>
             )}
 
+            {/* QR Modal */}
+            {selectedQR && (
+                <div className="modal-overlay">
+                    <div className="glass-card modal-content qr-modal animate-in">
+                        <div className="modal-header">
+                            <h3>Company QR Code</h3>
+                            <button className="close-btn" onClick={() => setSelectedQR(null)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="qr-display-wrapper">
+                            <QRCodeCanvas 
+                                id={`qr-${selectedQR.companyCode}`}
+                                value={selectedQR.companyCode} 
+                                size={256}
+                                level={"H"}
+                                includeMargin={true}
+                            />
+                            <div className="qr-meta">
+                                <h2>{selectedQR.companyName}</h2>
+                                <span className="code-badge">{selectedQR.companyCode}</span>
+                            </div>
+                        </div>
+                        <p className="text-muted small margin-top">Employees can scan this code to record their attendance.</p>
+                        <button 
+                            className="btn btn-primary full-width margin-top" 
+                            onClick={() => downloadQR(selectedQR.companyCode, selectedQR.companyName)}
+                        >
+                            <Download size={20} /> Download QR Image
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 .super-admin-tabs { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
                 .tab-btn { 
@@ -403,6 +466,10 @@ const SuperAdmin = () => {
                 .password-badge { color: var(--secondary); font-family: monospace; font-weight: 500; letter-spacing: 1px; }
                 .password-badge.missing { color: var(--text-muted); font-size: 0.75rem; font-style: italic; letter-spacing: 0; }
                 
+                .password-display { display: flex; align-items: center; gap: 0.5rem; }
+                .eye-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px; display: flex; align-items: center; transition: color 0.2s; }
+                .eye-btn:hover { color: var(--primary); }
+
                 .empty-state { padding: 4rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
                 
                 .actions-cell { display: flex; gap: 1rem; }
@@ -418,6 +485,11 @@ const SuperAdmin = () => {
                 .close-btn:hover { color: white; }
                 .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
 
+                .qr-modal { text-align: center; }
+                .qr-display-wrapper { background: white; padding: 2rem; border-radius: 16px; display: inline-block; margin: 1rem 0; }
+                .qr-meta { margin-top: 1.5rem; color: #1a2238; }
+                .qr-meta h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1a2238; }
+                
                 .full-width { width: 100%; }
             `}</style>
         </div>
