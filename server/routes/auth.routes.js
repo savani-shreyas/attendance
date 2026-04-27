@@ -10,7 +10,7 @@ router.post('/register', async (req, res) => {
         const { companyName, password, superAdminPassword } = req.body;
 
         // Simple security check for Super Admin
-        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'admin123')) {
+        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'Shreyas@031103')) {
             return res.status(403).json({ message: 'Invalid Super Admin Password' });
         }
 
@@ -84,7 +84,7 @@ router.post('/login', async (req, res) => {
 router.get('/companies', async (req, res) => {
     try {
         const { superAdminPassword } = req.query;
-        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'admin123')) {
+        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'Shreyas@031103')) {
             return res.status(403).json({ message: 'Invalid Super Admin Password' });
         }
 
@@ -99,7 +99,7 @@ router.get('/companies', async (req, res) => {
 router.delete('/companies/:id', async (req, res) => {
     try {
         const { superAdminPassword } = req.body;
-        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'admin123')) {
+        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'Shreyas@031103')) {
             return res.status(403).json({ message: 'Invalid Super Admin Password' });
         }
 
@@ -114,7 +114,7 @@ router.delete('/companies/:id', async (req, res) => {
 router.put('/companies/:id', async (req, res) => {
     try {
         const { companyName, password, superAdminPassword } = req.body;
-        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'admin123')) {
+        if (superAdminPassword !== (process.env.SUPER_ADMIN_PASSWORD || 'Shreyas@031103')) {
             return res.status(403).json({ message: 'Invalid Super Admin Password' });
         }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, Plus, Building, Key, Trash2, CheckCircle2, Lock, Edit2, X, RefreshCw, Eye, EyeOff, QrCode, Download } from 'lucide-react';
+import { ShieldAlert, Plus, Building, Key, Trash2, CheckCircle2, Lock, Edit2, X, RefreshCw, Eye, EyeOff, QrCode, Download, LogOut } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import api from '../api';
 
@@ -10,11 +10,11 @@ const SuperAdmin = () => {
     const [companies, setCompanies] = useState([]);
     const [showPasswords, setShowPasswords] = useState(false);
     const [visiblePasswords, setVisiblePasswords] = useState({});
-    
+
     // Create Form State
     const [companyName, setCompanyName] = useState('');
     const [password, setPassword] = useState('');
-    
+
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editData, setEditData] = useState({ id: '', companyName: '', password: '' });
@@ -31,13 +31,33 @@ const SuperAdmin = () => {
     // Auto-generate password on mount or tab switch
     useEffect(() => {
         if (!password) setPassword(generateRandomPassword());
+        
+        // Check for session from unified login
+        const storedPass = localStorage.getItem('superAdminPassword');
+        if (storedPass === 'Shreyas@031103') {
+            setSuperPass(storedPass);
+            setIsAuthorized(true);
+        }
     }, []);
+
+    useEffect(() => {
+        if (isAuthorized) {
+            fetchCompanies();
+        }
+    }, [isAuthorized]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('superAdminPassword');
+        window.location.href = '/login';
+    };
 
     const handleAuth = (e) => {
         e.preventDefault();
-        if (superPass === 'admin123') {
+        if (superPass === 'Shreyas@031103') {
+            localStorage.setItem('superAdminPassword', superPass);
             setIsAuthorized(true);
-            fetchCompanies();
         } else {
             alert('Invalid Super Admin Password');
         }
@@ -127,9 +147,9 @@ const SuperAdmin = () => {
                     <h2>Super Admin Access</h2>
                     <p className="text-muted">Enter the master password to manage company accounts.</p>
                     <form onSubmit={handleAuth} className="margin-top">
-                        <input 
-                            type="password" 
-                            placeholder="Master password..." 
+                        <input
+                            type="password"
+                            placeholder="Master password..."
                             className="master-input"
                             value={superPass}
                             onChange={(e) => setSuperPass(e.target.value)}
@@ -143,6 +163,7 @@ const SuperAdmin = () => {
                     .master-input { width: 100%; margin-bottom: 15px; padding: 0.875rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; color: white; margin-top: 1rem; }
                     .full-width { width: 100%; }
                     .margin-bottom { margin-bottom: 1.5rem; }
+                    .text-muted { font-size: 14px; line-height: 1.5; margin: 10px 0 15px }
                 `}</style>
             </div>
         );
@@ -156,17 +177,25 @@ const SuperAdmin = () => {
             </header>
 
             <div className="super-admin-tabs">
-                <button 
+                <button
                     className={`tab-btn ${activeTab === 'create' ? 'active' : ''}`}
                     onClick={() => setActiveTab('create')}
                 >
                     <Plus size={18} /> Create Company
                 </button>
-                <button 
+                <button
                     className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`}
                     onClick={() => { setActiveTab('list'); fetchCompanies(); }}
                 >
                     <Building size={18} /> Company List ({companies.length})
+                </button>
+                <button 
+                    onClick={handleLogout} 
+                    className="super-logout-btn"
+                    title="Logout"
+                >
+                    <LogOut size={20} />
+                    <span>Logout</span>
                 </button>
             </div>
 
@@ -177,15 +206,15 @@ const SuperAdmin = () => {
                             <Plus size={24} className="text-primary" />
                             <h3>Create New Company</h3>
                         </div>
-                        
+
                         <form onSubmit={handleCreateCompany} className="company-form">
                             <div className="input-field">
                                 <label>Company Display Name</label>
                                 <div className="field-row">
                                     <Building size={18} />
-                                    <input 
-                                        type="text" 
-                                        placeholder="e.g. Acme Corporation" 
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Acme Corporation"
                                         value={companyName}
                                         onChange={(e) => setCompanyName(e.target.value)}
                                         required
@@ -197,15 +226,15 @@ const SuperAdmin = () => {
                                 <label>Autogenerated Password</label>
                                 <div className="field-row">
                                     <Lock size={18} />
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={password}
                                         readOnly
                                         className="readonly-input"
                                     />
-                                    <button 
-                                        type="button" 
-                                        className="refresh-btn" 
+                                    <button
+                                        type="button"
+                                        className="refresh-btn"
                                         onClick={() => setPassword(generateRandomPassword())}
                                         title="Regenerate Password"
                                     >
@@ -234,8 +263,8 @@ const SuperAdmin = () => {
                                 <Building size={24} className="text-secondary" />
                                 <h3>Registered Companies</h3>
                             </div>
-                            <button 
-                                className="toggle-view-btn" 
+                            <button
+                                className="toggle-view-btn"
                                 onClick={() => setShowPasswords(!showPasswords)}
                                 title={showPasswords ? "Hide Passwords" : "Show Passwords"}
                             >
@@ -272,14 +301,14 @@ const SuperAdmin = () => {
                                                 <td>
                                                     <div className="password-display">
                                                         <span className={`password-badge ${!comp.displayPassword ? 'missing' : ''}`}>
-                                                            {(showPasswords || visiblePasswords[comp._id]) 
+                                                            {(showPasswords || visiblePasswords[comp._id])
                                                                 ? (comp.displayPassword || 'Edit to set')
                                                                 : '••••'
                                                             }
                                                         </span>
-                                                        <button 
+                                                        <button
                                                             className="eye-btn"
-                                                            onClick={() => setVisiblePasswords(prev => ({...prev, [comp._id]: !prev[comp._id]}))}
+                                                            onClick={() => setVisiblePasswords(prev => ({ ...prev, [comp._id]: !prev[comp._id] }))}
                                                         >
                                                             {(showPasswords || visiblePasswords[comp._id]) ? <EyeOff size={14} /> : <Eye size={14} />}
                                                         </button>
@@ -287,20 +316,20 @@ const SuperAdmin = () => {
                                                 </td>
                                                 <td>{new Date(comp.createdAt).toLocaleDateString()}</td>
                                                 <td className="actions-cell">
-                                                    <button 
+                                                    <button
                                                         className="action-btn"
                                                         onClick={() => setSelectedQR(comp)}
                                                         title="View Company QR"
                                                     >
                                                         <QrCode size={16} /> QR
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn"
                                                         onClick={() => openEditModal(comp)}
                                                     >
                                                         <Edit2 size={16} /> Edit
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="action-btn danger"
                                                         onClick={() => handleDeleteCompany(comp._id, comp.companyName)}
                                                     >
@@ -332,29 +361,29 @@ const SuperAdmin = () => {
                                 <label>Company Name</label>
                                 <div className="field-row">
                                     <Building size={18} />
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={editData.companyName}
-                                        onChange={(e) => setEditData({...editData, companyName: e.target.value})}
+                                        onChange={(e) => setEditData({ ...editData, companyName: e.target.value })}
                                         required
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="input-field">
                                 <label>Reset Password (leave blank for no change)</label>
                                 <div className="field-row">
                                     <Lock size={18} />
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         placeholder="Enter new 4-char password..."
                                         value={editData.password}
-                                        onChange={(e) => setEditData({...editData, password: e.target.value.toUpperCase().slice(0, 4)})}
+                                        onChange={(e) => setEditData({ ...editData, password: e.target.value.toUpperCase().slice(0, 4) })}
                                     />
-                                    <button 
-                                        type="button" 
-                                        className="refresh-btn" 
-                                        onClick={() => setEditData({...editData, password: generateRandomPassword()})}
+                                    <button
+                                        type="button"
+                                        className="refresh-btn"
+                                        onClick={() => setEditData({ ...editData, password: generateRandomPassword() })}
                                     >
                                         <RefreshCw size={16} />
                                     </button>
@@ -382,9 +411,9 @@ const SuperAdmin = () => {
                             </button>
                         </div>
                         <div className="qr-display-wrapper">
-                            <QRCodeCanvas 
+                            <QRCodeCanvas
                                 id={`qr-${selectedQR.companyCode}`}
-                                value={selectedQR.companyCode} 
+                                value={selectedQR.companyCode}
                                 size={256}
                                 level={"H"}
                                 includeMargin={true}
@@ -395,8 +424,8 @@ const SuperAdmin = () => {
                             </div>
                         </div>
                         <p className="text-muted small margin-top">Employees can scan this code to record their attendance.</p>
-                        <button 
-                            className="btn btn-primary full-width margin-top" 
+                        <button
+                            className="btn btn-primary full-width margin-top"
                             onClick={() => downloadQR(selectedQR.companyCode, selectedQR.companyName)}
                         >
                             <Download size={20} /> Download QR Image
@@ -406,7 +435,24 @@ const SuperAdmin = () => {
             )}
 
             <style>{`
-                .super-admin-tabs { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
+                .super-admin-tabs { display: flex; justify-content: center; gap: 1rem; margin-top: 1.4rem; }
+                .super-logout-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    background: rgba(255, 71, 87, 0.1);
+                    color: #ff4757;
+                    border: 1px solid rgba(255, 71, 87, 0.2);
+                    padding: 0.6rem 1.2rem;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    transition: all 0.2s;
+                }
+                .super-logout-btn:hover {
+                    background: #cd2231;
+                    color: white;
+                }
                 .tab-btn { 
                     padding: 0.75rem 1.5rem; 
                     background: rgba(255,255,255,0.03); 
@@ -425,7 +471,7 @@ const SuperAdmin = () => {
 
                 .super-admin-grid { display: grid; gap: 2rem; max-width: 800px; margin: 2rem auto 0; }
                 .create-section, .list-section { padding: 2rem; width: 100%; }
-                
+                .create-section{ max-width: 500px; margin: 0 auto; }
                 .section-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
                 .section-header.space-between { justify-content: space-between; }
                 .title-group { display: flex; align-items: center; gap: 0.75rem; }

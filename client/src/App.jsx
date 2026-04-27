@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Clock, Camera, LogOut, Settings as SettingsIcon, ShieldEllipsis } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, Camera, LogOut, Settings as SettingsIcon, ShieldEllipsis, Scan } from 'lucide-react';
 import './App.css';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import AttendanceLogs from './pages/AttendanceLogs';
 import Scanner from './pages/Scanner';
 import EmployeeScan from './pages/EmployeeScan';
-import ScannerLogin from './pages/ScannerLogin';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import SuperAdmin from './pages/SuperAdmin';
@@ -15,6 +14,15 @@ import SuperAdmin from './pages/SuperAdmin';
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/login" />;
+  return children;
+};
+
+const SuperAdminRoute = ({ children }) => {
+  const role = localStorage.getItem('role');
+  const superPass = localStorage.getItem('superAdminPassword');
+  if (role !== 'super-admin' || superPass !== 'Shreyas@031103') {
+    return <Navigate to="/login" />;
+  }
   return children;
 };
 
@@ -52,9 +60,9 @@ const Sidebar = ({ onLogout, companyName }) => {
         ))}
       </nav>
       <div className="sidebar-footer">
-        <Link to="/super-admin" className="nav-item">
-            <ShieldEllipsis size={20} />
-            <span>Super Admin</span>
+        <Link to="/login?type=scanner" className="nav-item">
+            <Scan size={20} />
+            <span>Employee Scan</span>
         </Link>
         <button className="nav-item logout" onClick={onLogout}>
           <LogOut size={20} />
@@ -79,6 +87,9 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('company');
+    localStorage.removeItem('role');
+    localStorage.removeItem('superAdminPassword');
+    localStorage.removeItem('scannerUser');
     setIsLoggedIn(false);
     setCompany(null);
     window.location.href = '/login';
@@ -102,8 +113,8 @@ const AppContent = ({ onLogout, company }) => {
         <main className={`content ${isAuthPage ? 'full-width' : ''}`}>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/super-admin" element={<SuperAdmin />} />
-            <Route path="/scanner-login" element={<ScannerLogin />} />
+            <Route path="/super-admin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
+            <Route path="/scanner-login" element={<Navigate to="/login?type=scanner" replace />} />
             <Route path="/scan" element={<EmployeeScan />} />
             
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

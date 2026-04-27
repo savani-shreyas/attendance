@@ -19,6 +19,11 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/auth', authRoutes);
+ 
+ // Health Check Route
+ app.get('/', (req, res) => {
+     res.send('Attendance System API is running...');
+ });
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance';
