@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Company = require('./server/models/Company');
 require('dotenv').config({ path: './server/.env' });
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://businessastrixdigital_db_user:XnBzwold3bAgNG5W@astrixdigital.g8v6y33.mongodb.net/?appName=AstrixDigital';
 
 async function test() {
     try {
